@@ -1,0 +1,8 @@
+.next
+node_modules
+.netlify
+.vercel
+midia
+public
+package-lock.json
+*.md

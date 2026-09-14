@@ -1,0 +1,9 @@
+# Originais das fotografias e do vídeo. Pesam mais de 20 MB e nunca são
+# servidos: o que vai para o visitante está em public/, gerado por
+# scripts/build-assets.mjs.
+midia/
+
+# Artefactos locais
+.next/
+.netlify/
+node_modules/

@@ -1,26 +1,416 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   LODÊ — sistema visual
+   Preto e o dourado real do logotipo, amostrado pixel a pixel.
+   A rampa metálica completa: sombra → meio-tom → luz → especular.
+   É a rampa que faz o dourado parecer metal; um tom só faz amarelo.
+   ============================================================ */
+
+@theme {
+  --font-display: var(--font-playfair), ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Pretos — nunca um só. A profundidade vem da diferença entre eles. */
+  --color-void: #000000;
+  --color-carbon: #070707;
+  --color-slate: #101010;
+  --color-ash: #1a1917;
+
+  /* Dourado — valores medidos em midia/logos/logo.svg.jpeg */
+  --color-gold-deep: #583701;
+  --color-gold-shadow: #836330;
+  --color-gold: #ce9a44;
+  --color-gold-light: #fbd87a;
+  --color-gold-spec: #fff5c1;
+
+  /* Texto — derivado do especular do logo, nunca branco puro.
+     Branco puro sobre preto vibra; este quente assenta. */
+  --color-bone: #f0e8d8;
+  --color-bone-dim: #a09789;
+
+  --spacing-section: clamp(6rem, 11vw, 12rem);
+  --spacing-gutter: clamp(1.5rem, 5vw, 6rem);
+
+  --ease-cinema: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-metal: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: dark;
+    --grain-opacity: 0.045;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: auto;
+  }
+
+  body {
+    background-color: var(--color-void);
+    color: var(--color-bone);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+  }
+
+  /* Display grande pede tracking negativo e leading curto.
+     É a diferença entre "fonte serifada" e "tipografia". */
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.035em;
+    line-height: 0.95;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* O cabeçalho é fixo. Sem isto, tanto as âncoras nativas como o
+     scroll automático do foco por teclado param com o título tapado. */
+  section[id],
+  [id='conteudo'] {
+    scroll-margin-top: 110px;
+  }
+
+  ::selection {
+    background-color: var(--color-gold);
+    color: var(--color-void);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold-light);
+    outline-offset: 4px;
+    border-radius: 1px;
+  }
+
+  /* Lenis assume o scroll; o browser não deve competir com ele. */
+  html.lenis,
+  html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+}
+
+@layer components {
+  /* ---- Metal escovado ------------------------------------------------
+     Um gradiente que percorre a rampa toda em ângulo raso. As bandas
+     estreitas no meio são o que lê como escovado; um degradê suave
+     de dois tons lê como plástico. */
+  .metal {
+    background-image: linear-gradient(
+      100deg,
+      var(--color-gold-deep) 0%,
+      var(--color-gold-shadow) 14%,
+      var(--color-gold) 30%,
+      var(--color-gold-light) 42%,
+      var(--color-gold-spec) 48%,
+      var(--color-gold-light) 54%,
+      var(--color-gold) 66%,
+      var(--color-gold-shadow) 82%,
+      var(--color-gold-deep) 100%
+    );
+  }
+
+  /* ---- Metal vivo -----------------------------------------------------
+     O botão principal nunca fica completamente parado: uma lâmina de luz
+     atravessa-o em ciclo, como metal polido a apanhar a luz da sala.
+
+     Duas decisões que separam "elegante" de "chamativo":
+       · a lâmina é estreita e a opacidade nunca chega ao branco puro —
+         é um reflexo, não um flash;
+       · o keyframe tem tempo morto (a partir dos 45%): o brilho passa,
+         desaparece, e só volta três segundos depois. Um ciclo contínuo
+         sem pausa lê-se como banner publicitário.
+
+     A animação é `transform`, não `background-position`: assim corre na
+     camada de composição e não força repintura a cada fotograma. */
+  .metal-vivo {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+
+    /* Base propositadamente sem ponto quente ao centro.
+       O gradiente `.metal` normal já atinge o especular a meio, e uma
+       lâmina de luz a passar por cima de algo que já é o ponto mais
+       claro do elemento simplesmente não se vê. Aqui a chapa é
+       uniforme e a única coisa verdadeiramente brilhante é o reflexo
+       que passa. O tom mais escuro fica nos 6% das pontas, fora da
+       zona onde o texto assenta. */
+    /* A chapa fica no dourado médio, não no claro.
+       Com a chapa em `gold-light` (luminância ~217) o especular ~240
+       ficava só 23 níveis acima: medido, o reflexo era invisível. No
+       médio (~160) o mesmo especular é um salto de 80 níveis e lê-se
+       como luz. O preto sobre este tom mantém-se em ~8:1, bem acima
+       do mínimo AA. */
+    background-image:
+      /* Luz vinda de cima: é isto que faz a chapa parecer uma barra
+         metálica torneada, e não um rectângulo pintado. Fica no eixo
+         vertical de propósito — o horizontal está reservado para o
+         reflexo que viaja, e dois brilhos no mesmo eixo anulam-se. */
+      linear-gradient(
+        to bottom,
+        color-mix(in oklab, var(--color-gold-spec) 34%, transparent) 0%,
+        transparent 52%,
+        /* Medido: a 34% o rodapé da chapa descia o contraste do texto
+           preto para 3,4:1, abaixo do mínimo AA. A 15%, e só a partir
+           dos 72% da altura, a barra continua a parecer torneada e o
+           texto mantém a margem. */
+        transparent 72%,
+        color-mix(in oklab, var(--color-gold-deep) 15%, transparent) 100%
+      ),
+      linear-gradient(
+        100deg,
+        var(--color-gold-shadow) 0%,
+        var(--color-gold) 10%,
+        var(--color-gold) 90%,
+        var(--color-gold-shadow) 100%
+      );
+  }
+  .metal-vivo::after {
+    content: "";
+    position: absolute;
+    /* Sem folga horizontal.
+       Medido: com a camada mais larga que o botão, o reflexo passava
+       a maior parte do percurso fora da chapa e só aparecia em 1 de
+       cada 14 fotogramas. Com a camada à medida, o percurso útil sobe
+       para cerca de 60% do trajecto. */
+    inset: -30% 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image: linear-gradient(
+      100deg,
+      transparent 36%,
+      color-mix(in oklab, var(--color-gold-spec) 50%, transparent) 45%,
+      var(--color-gold-spec) 50%,
+      color-mix(in oklab, var(--color-gold-spec) 50%, transparent) 55%,
+      transparent 64%
+    );
+    /* Contorno suave: uma lâmina de bordos duros lê-se como uma barra a
+       deslizar; desfocada lê-se como luz. */
+    filter: blur(2px);
+    transform: translateX(-100%);
+    animation: metal-brilho 4s cubic-bezier(0.45, 0, 0.4, 1) infinite;
+    will-change: transform;
+  }
+
+  @keyframes metal-brilho {
+    0% { transform: translateX(-100%); }
+    /* 62% a percorrer, 38% em repouso: a pausa é o que impede que
+       isto se leia como um banner a piscar. */
+    62%, 100% { transform: translateX(100%); }
+  }
+
+  .metal-text {
+    background-image: linear-gradient(
+      100deg,
+      var(--color-gold-shadow) 0%,
+      var(--color-gold) 26%,
+      var(--color-gold-light) 44%,
+      var(--color-gold-spec) 50%,
+      var(--color-gold-light) 58%,
+      var(--color-gold) 76%,
+      var(--color-gold-shadow) 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* ---- Filete dourado ------------------------------------------------
+     A régua de 1px que separa as secções. Esvai-se nas pontas para não
+     parecer uma borda de tabela. */
+  .hairline {
+    height: 1px;
+    background-image: linear-gradient(
+      to right,
+      transparent,
+      color-mix(in oklab, var(--color-gold) 55%, transparent) 22%,
+      color-mix(in oklab, var(--color-gold-light) 70%, transparent) 50%,
+      color-mix(in oklab, var(--color-gold) 55%, transparent) 78%,
+      transparent
+    );
+  }
+
+  /* ---- Fotografia que dissolve no fundo -------------------------------
+     Para retratos feitos sobre preto. Mesmo com o fundo da fotografia
+     levado a zero, resta sempre um limite recto onde ela acaba — e o
+     olho lê esse limite como um rectângulo mais claro, ainda que a cor
+     seja a mesma.
+
+     A máscara esbate os quatro lados, e o corte deixa de existir: a
+     figura passa a emergir do escuro em vez de estar colada em cima
+     dele. É este efeito que sustenta a secção do atelier.
+
+     Duas máscaras cruzadas com `intersect`; o prefixo `-webkit-` cobre
+     as versões do Safari que ainda não aceitam a sintaxe padrão. */
+  .dissolver-no-fundo {
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        #000 12%,
+        #000 58%,
+        transparent 100%
+      ),
+      linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
+    mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        #000 12%,
+        #000 58%,
+        transparent 100%
+      ),
+      linear-gradient(to right, transparent 0%, #000 10%, #000 90%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+
+  /* ---- Vidro ---------------------------------------------------------- */
+  .glass {
+    background-color: color-mix(in oklab, var(--color-void) 62%, transparent);
+    backdrop-filter: blur(14px) saturate(120%);
+    -webkit-backdrop-filter: blur(14px) saturate(120%);
+    border: 1px solid color-mix(in oklab, var(--color-gold) 18%, transparent);
+  }
+
+  /* ---- Grão cinematográfico -------------------------------------------
+     SVG de ruído inline: sem pedido de rede, sem imagem a carregar.
+     Fica em `fixed` para não deslizar com o scroll — grão que faz
+     parallax denuncia-se como textura em vez de emulsão. */
+  .grain::after {
+    content: "";
+    position: fixed;
+    inset: -50%;
+    z-index: 60;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: grain-shift 700ms steps(1) infinite;
+    will-change: transform;
+  }
+
+  @keyframes grain-shift {
+    0%   { transform: translate(0, 0); }
+    20%  { transform: translate(-3%, 2%); }
+    40%  { transform: translate(2%, -3%); }
+    60%  { transform: translate(-2%, -2%); }
+    80%  { transform: translate(3%, 1%); }
+    100% { transform: translate(0, 0); }
+  }
+
+  /* ---- Máscara de revelação -------------------------------------------
+     O conteúdo existe sempre no DOM. A máscara só o esconde
+     visualmente, e o estado final é o revelado — se o JS falhar ou o
+     movimento estiver reduzido, nada desaparece. */
+  .mask-line {
+    display: block;
+    overflow: hidden;
+  }
+  .mask-line > * {
+    display: block;
+    will-change: transform;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  /* Varrimento especular: o gesto assinatura. Uma lâmina de luz
+     atravessa o elemento, como a luz a passar num metal polido. */
+  .sweep {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .sweep::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image: linear-gradient(
+      100deg,
+      transparent 38%,
+      color-mix(in oklab, var(--color-gold-spec) 42%, transparent) 48%,
+      color-mix(in oklab, var(--color-gold-spec) 70%, transparent) 50%,
+      color-mix(in oklab, var(--color-gold-spec) 42%, transparent) 52%,
+      transparent 62%
+    );
+    transform: translateX(-130%);
+    transition: transform 900ms var(--ease-metal);
+  }
+  .sweep:hover::before,
+  .sweep:focus-visible::before {
+    transform: translateX(130%);
+  }
+
+  /* Vinheta: fecha as bordas do vídeo/imagem e empurra o olho ao centro. */
+  .vignette {
+    background-image: radial-gradient(
+      120% 90% at 50% 45%,
+      transparent 30%,
+      color-mix(in oklab, var(--color-void) 45%, transparent) 68%,
+      var(--color-void) 100%
+    );
+  }
+}
+
+/* ============================================================
+   Movimento reduzido.
+   O site continua completo — só deixa de se mover. A regra crítica
+   é a última: se uma animação foi cancelada, o que ela ia revelar
+   tem de já estar visível. Conteúdo invisível é o bug clássico aqui.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .grain::after {
+    animation: none;
+  }
+
+  .mask-line > *,
+  [data-reveal],
+  [data-reveal-word] {
+    transform: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    clip-path: none !important;
+  }
+}
+
+/* ============================================================
+   Tapa-vista da abertura.
+
+   Marcado pelo script em `layout.tsx` antes da primeira pintura e
+   retirado assim que o filme está montado. Existe só para cobrir o
+   intervalo entre o documento ser pintado e o React montar a
+   abertura — sem ele via-se um relâmpago do site antes do vídeo.
+
+   Fica abaixo do z-index da abertura (90), para o filme entrar por
+   cima sem descontinuidade.
+   ============================================================ */
+html[data-abertura='sim']::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 89;
+  background: #000;
+  pointer-events: none;
 }

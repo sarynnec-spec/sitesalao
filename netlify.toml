@@ -1,0 +1,38 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+# O runtime do Next para Netlify. Sem ele o site é servido como ficheiros
+# estáticos soltos e a optimização de imagens do next/image não funciona.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# ---------------------------------------------------------------------
+# NÃO INDEXAR — remover antes do lançamento real.
+#
+# O site ainda tem telefone, morada, e-mail e horário inventados, e esses
+# dados vão no JSON-LD que o Google lê como negócio local. Deixar isto
+# indexável faria a LODÊ aparecer na pesquisa com contactos falsos, o que
+# é pior do que não aparecer de todo.
+#
+# Quando os dados reais estiverem em src/lib/site.ts, apagar este bloco.
+# ---------------------------------------------------------------------
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+# Os ficheiros com hash no nome nunca mudam de conteúdo: podem ser
+# guardados para sempre.
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/video/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
